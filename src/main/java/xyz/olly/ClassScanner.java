@@ -49,14 +49,14 @@ public final class ClassScanner {
     } else if (p.toString().endsWith(".java")) {
       processSource(p);
     } else if (p.toString().endsWith(".jar")) {
-      System.err.println(String.format("WARN: jar files unsupported [%s]", p.toString()));
+      // TODO.
     }
   }
 
   private void processDirectory(Path directoryPath) {
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(directoryPath)) {
       for (Path path : stream) {
-        queue.add(path);
+        visit(path);
       }
     } catch(IOException e) {
       System.err.println(String.format("ERR: reading folder %s\n%s", directoryPath.toString(), e));
@@ -66,7 +66,7 @@ public final class ClassScanner {
   private void processSource(Path sourcePath) {
     try {
       new ClassVisitor().visit(JavaParser.parse(sourcePath), classNames);
-    } catch (IOException e) {
+    } catch (Throwable e) {
       System.err.println(String.format("ERR: parsing file %s\n%s", sourcePath.toString(), e));
     }
   }
@@ -77,9 +77,6 @@ public final class ClassScanner {
       classScanner.addRoot(Paths.get(arg));
     }
     classScanner.run();
-    for (String name : classScanner.getClassNames()) {
-      System.out.println(name);
-    }
   }
 
   private static final class ClassVisitor extends VoidVisitorAdapter<Set<String>> {
@@ -116,7 +113,10 @@ public final class ClassScanner {
       if (packageName != null) {
         name = packageName + "." + name;
       }
-      classNames.add(name);
+      if (!classNames.contains(name)) {
+        classNames.add(name);
+        System.out.println(name);
+      }
     }
   }
 }
